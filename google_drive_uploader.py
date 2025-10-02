@@ -5,35 +5,32 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# Definisce a quali servizi l'app può accedere (sola scrittura su Drive)
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
+# Il file token.json ora sarà caricato come "Secret File" su Render
 TOKEN_FILE = 'token.json'
+CREDENTIALS_FILE = 'credentials.json'
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 def get_drive_service():
     """
-    Gestisce l'autenticazione e restituisce un oggetto 'service' per interagire con Drive.
+    Gestisce l'autenticazione in modo automatico usando token.json.
+    Se il token è scaduto, lo aggiorna usando il refresh_token.
     """
     creds = None
-    # Il file token.json salva le credenziali dell'utente dopo il primo login
     if os.path.exists(TOKEN_FILE):
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
     
-    # Se le credenziali non sono valide o sono scadute, l'utente deve fare il login
+    # Se non ci sono credenziali o non sono valide, le aggiorna
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
+            print("Aggiornamento del token di accesso scaduto...")
             creds.refresh(Request())
+            # Salva le credenziali aggiornate per il futuro
+            with open(TOKEN_FILE, 'w') as token:
+                token.write(creds.to_json())
         else:
-            # Avvia il flusso di login interattivo la prima volta
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            # Il messaggio per il login apparirà nel terminale dove gira 'flask run'
-            print("\n--- AUTENTICAZIONE GOOGLE DRIVE RICHIESTA ---")
-            print("Copia il link sottostante nel browser, accedi e autorizza l'app.")
-            print("Poi copia il codice che ricevi e incollalo qui nel terminale.")
-            creds = flow.run_local_server(port=0)
-        
-        # Salva le credenziali per le esecuzioni future
-        with open(TOKEN_FILE, 'w') as token:
-            token.write(creds.to_json())
+            # Questo blocco non dovrebbe mai essere raggiunto su un server configurato correttamente
+            raise Exception(f"Errore: Manca il file '{TOKEN_FILE}' o non contiene un refresh_token valido. "
+                            "Genera un nuovo token.json in locale e caricalo come Secret File su Render.")
             
     return build('drive', 'v3', credentials=creds)
 
@@ -53,24 +50,16 @@ def upload_to_google_drive(file_path, folder_id):
         
         media = MediaFileUpload(file_path)
         
-        # --- MODIFICA CHIAVE ---
-        # Aggiunto il parametro 'supportsAllDrives=True' per abilitare
-        # il supporto ai Drive Condivisi.
         file = service.files().create(
             body=file_metadata,
             media_body=media,
             fields='id',
-            supportsAllDrives=True  # <-- QUESTA È LA RIGA AGGIUNTA
+            supportsAllDrives=True
         ).execute()
         
         print(f"File '{file_name}' caricato con successo su Google Drive. ID: {file.get('id')}")
         return True
         
     except Exception as e:
-        if 'invalid_grant' in str(e) and os.path.exists(TOKEN_FILE):
-            os.remove(TOKEN_FILE)
-            print("Token di Google Drive non valido o scaduto. Rimosso. Riprova per autenticarti di nuovo.")
-        
         print(f"Errore durante l'upload su Google Drive: {e}")
         return False
-
