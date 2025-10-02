@@ -1,0 +1,10 @@
+flask
+python-dotenv
+werkzeug
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pandas
+openpyxl
+xlsxwriter
+gunicorn

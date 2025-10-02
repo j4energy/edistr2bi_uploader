@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# Config e secrets
+.env
+credentials.json
+token.json
+
+# Output temporanei
+uploads/*
+output/*
+*.xlsx
+!templates/*.xlsx   # se vuoi mantenere un template di esempio
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
