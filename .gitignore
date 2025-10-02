@@ -1,5 +1,21 @@
+#Ambiente virtuale Python
+venv/
+.venv/
 
-# runtime
+#File di configurazione e token sensibili
+.env
+credentials.json
+token.json
+
+#Cartella dei file generati
+output/
+
+#Ignora la cartella uploads ma mantieni i file di default
 uploads/*
-output/*
+!uploads/Info_PV_per_script.xlsx
+!uploads/CONSUMI_TOTALI_F1-F2-F3.xlsx
 
+#File di cache e di sistema
+pycache/
+*.pyc
+.DS_Store
